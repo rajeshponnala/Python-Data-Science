@@ -72,7 +72,15 @@ def refresh_data():
     lens = pd.merge(movies_ratings,users)
     get_movie_distance_table(lens).to_csv('moviedist.csv')
 
-#def userLikesOrDislikesMovie(user,movie):
- #   data = lens.head(100)
- #   tData = get_TransformedData(data)
- #   simMovies = [ m for m in tData.ix[movie].index.drop(movie) if tData.ix[movie][m] == 4]
+def userLikesOrDislikesSimilarMovie(user,movie):
+    sData = getSimilarityTable(lens)
+    userRatedMovies = lens['movie_id'][lens['user_id']==user].tolist()
+    simMovies = [ m for m in sData.ix[movie].index.drop(movie) if  m not in userRatedMovies and sData.ix[movie][m] == 4]
+    return 'L' if lens[lens['movie_id'].isin(simMovies)].groupby('movie_id')['rating'].apply(np.mean).mean() >= max(lens['rating']/2) else 'DL'
+
+def recommend_user_similar_movies(user,movie):
+    sData = getSimilarityTable(lens)
+    userRatedMovies = lens['movie_id'][lens['user_id']==user].tolist()
+    filterRating =  max(lens['rating']/2)
+    simMovies = [ m for m in sData.ix[movie].index.drop(movie) if  m not in userRatedMovies and sData.ix[movie][m] == 4 and lens['rating'][lens['movie_id'] == m].mean() >=filterRating ]
+    return lens[(lens['movie_id'].isin(simMovies))].groupby('movie_id').apply(lambda x: (x['movie_id'].iloc[0],x['title'].iloc[0],x['rating'].mean()))
